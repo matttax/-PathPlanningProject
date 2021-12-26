@@ -8,6 +8,11 @@
 #include <math.h>
 #include <limits>
 #include <chrono>
+#include <set>
+#include <map>
+#include <type_traits>
+
+//using Cmp = std::integral_constant<decltype(&NodeComparator), &NodeComparator>;
 
 class Search
 {
@@ -35,7 +40,31 @@ class Search
 
         SearchResult                    sresult; //This will store the search result
         std::list<Node>                 lppath, hppath; //
+        std::vector<std::pair<int, int>>  getChildren(Node* parent, const Map &map, const EnvironmentOptions& environment);
 
-        //CODE HERE to define other members of the class
+        static double heuristic(int current_i, int current_j, const EnvironmentOptions &options, const Map &map);
+        struct OPEN_COLLECTION {
+            std::vector<Node*> nodes;
+            void add(Node* node) {
+                nodes.push_back(node);
+                std::sort(nodes.begin(), nodes.end(), NodeComparator());
+            }
+            Node* find(std::pair<int, int> node_coordinates) {
+                for (Node* curr : nodes) {
+                    if (curr->i == node_coordinates.first && curr->j == node_coordinates.second)
+                        return curr;
+                }
+                return nullptr;
+            }
+            void removeFirst() {
+                nodes.erase(nodes.begin());
+            }
+        } OPEN;
+        std::set<std::pair<int, int>>   CLOSED;
+        void newWeight(Node *parent, Node *child, const Map &map);
+
+        void makePrimaryPath(Node* firstNode);
+        void makeSecondaryPath();
 };
+
 #endif

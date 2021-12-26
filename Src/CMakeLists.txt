@@ -30,3 +30,5 @@ install(TARGETS ${PROJECT_NAME}
 install(TARGETS ${PROJECT_NAME}
         CONFIGURATIONS Release
         DESTINATION Bin/Release)
+
+set( CMAKE_BUILD_TYPE Debug )

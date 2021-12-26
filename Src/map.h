@@ -39,7 +39,9 @@ class Map
         int getMapHeight() const;
         int getMapWidth() const;
         double getCellSize() const;
-
+        std::pair<int, int> getGoal() const;
+        std::pair<int, int> getStart() const;
+        bool isWalkable(int i, int j) const;
 };
 
 #endif

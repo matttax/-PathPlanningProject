@@ -10,23 +10,122 @@ Search::~Search() {}
 
 SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
-    //need to implement
+    int nodescreated = 1;
+    int numberofsteps = 0;
+    auto start_time = std::chrono::steady_clock::now();
 
-    /*sresult.pathfound = ;
-    sresult.nodescreated =  ;
-    sresult.numberofsteps = ;
-    sresult.time = ;
-    sresult.hppath = &hppath; //Here is a constant pointer
-    sresult.lppath = &lppath;*/
+    auto start_coordinates = map.getStart();
+    auto goal_coordinates = map.getGoal();
+
+    OPEN.add(new Node(start_coordinates.first, start_coordinates.second,0,nullptr));
+    while(!OPEN.nodes.empty()) {
+        numberofsteps++;
+        Node *curr = *OPEN.nodes.begin();
+        OPEN.removeFirst();
+        CLOSED.emplace(curr->i, curr->j);
+        if (curr->i == goal_coordinates.first && curr->j == goal_coordinates.second) {
+            sresult.pathfound = true;
+            sresult.pathlength = curr->g;
+            break;
+        }
+        std::vector<std::pair<int, int>> children = getChildren(curr, map, options);
+        for (auto& child_coordinates : children) {
+            Node* wanted = OPEN.find(child_coordinates);
+            if (CLOSED.count(child_coordinates)) {
+                continue;
+            }
+            if (wanted) {
+                newWeight(curr, wanted, map);
+            } else {
+                Node* child = new Node(child_coordinates.first, child_coordinates.second, __INT_MAX__, curr);
+                nodescreated++;
+                OPEN.add(child);
+                newWeight(curr, child, map);
+            }
+        }
+    }
+    auto end_time = std::chrono::steady_clock::now();
+    sresult.time = std::chrono::duration<double>(end_time - start_time).count();
+    sresult.pathlength = (*OPEN.nodes.begin())->g;
+    sresult.numberofsteps = numberofsteps;
+    sresult.nodescreated = nodescreated;
+    if (!OPEN.nodes.empty()) {
+        sresult.pathfound = true;
+        makePrimaryPath((*OPEN.nodes.begin()));
+        makeSecondaryPath();
+    }
+    OPEN.nodes.clear();
+    CLOSED.clear();
+    sresult.hppath = &hppath;
+    sresult.lppath = &lppath;
     return sresult;
 }
 
-/*void Search::makePrimaryPath(Node curNode)
-{
-    //need to implement
-}*/
+void Search::newWeight(Node* parent, Node* child, const Map &map) {
+    double weight = 1;
+    int dx = abs(parent->i - child->i);
+    int dy = abs(parent->j - child->j);
+    if (dx + dy == 2) {
+        weight *= CN_SQRT_TWO;
+    }
+    if (child->g > parent->g + weight) {
+        child->g = parent->g + weight;
+        child->parent = parent;
+        OPEN.add(child);
+    }
+}
 
-/*void Search::makeSecondaryPath()
+void Search::makePrimaryPath(Node* firstNode)
 {
-    //need to implement
-}*/
+    lppath.push_front(*firstNode);
+    Node* curr = firstNode;
+    while (curr->parent) {
+        lppath.push_front(*(curr->parent));
+        curr = curr->parent;
+    }
+    lppath.push_front(*(curr));
+}
+
+void Search::makeSecondaryPath() {
+    for (auto node : lppath) {
+        if (hppath.size() >= 2) {
+            auto last_node = hppath.back();
+            auto prev_node = *std::prev(std::prev(hppath.end()));
+            std::pair<int, int> dir1 = {last_node.i - prev_node.i, last_node.j - prev_node.j};
+            std::pair<int, int> dir2 = {node.i - last_node.i, node.j - last_node.j};
+            if (dir1.first * dir2.second == dir1.second * dir2.first) {
+                hppath.pop_back();
+            }
+        }
+        hppath.push_back(node);
+    }
+}
+
+std::vector<std::pair<int, int>> Search::getChildren(Node* curr, const Map &map, const EnvironmentOptions& environment) {
+    std::vector<std::pair<int, int>> moves = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+    if (environment.allowdiagonal) {
+        moves.insert(moves.end(), {{1, 1}, {-1, -1}, {1, -1}, {-1, 1}});
+    }
+    std::vector<std::pair<int, int>> children;
+
+    for (auto [x_move, y_move] : moves) {
+        int next_cell_i = curr->i + x_move;
+        int next_cell_j = curr->j + y_move;
+        if (!map.isWalkable(next_cell_i, next_cell_j)) {
+            continue;
+        }
+        if (x_move * y_move != 0) {
+            //TODO
+        }
+        children.emplace_back(next_cell_i, next_cell_j);
+    }
+    std::cout << curr->g << "\t" << curr->i << ";" << curr->j << " ";
+    for (auto v : children)
+        std::cout << "(" << v.first << ";" << v.second << ")";
+    std::cout << "\n";
+    return children;
+}
+
+double Search::heuristic(int current_i, int current_j, const EnvironmentOptions &options, const Map &map) {
+    return 0;
+}

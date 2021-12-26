@@ -338,3 +338,15 @@ double Map::getCellSize() const
 {
       return cellSize;
 }
+
+std::pair<int, int> Map::getGoal() const {
+    return std::make_pair(goal_i, goal_j);
+}
+
+std::pair<int, int> Map::getStart() const {
+    return std::make_pair(start_i, start_j);
+}
+
+bool Map::isWalkable(int i, int j) const {
+    return CellOnGrid(i, j) && CellIsTraversable(i, j);
+}
