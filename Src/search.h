@@ -42,7 +42,7 @@ class Search
         std::list<Node>                 lppath, hppath; //
         std::vector<std::pair<int, int>>  getChildren(Node* parent, const Map &map, const EnvironmentOptions& environment);
 
-        static double heuristic(int current_i, int current_j, const EnvironmentOptions &options, const Map &map);
+        static double heuristic(std::pair<int, int> coordinates, const EnvironmentOptions &options, const Map &map);
         struct OPEN_COLLECTION {
             std::vector<Node*> nodes;
             void add(Node* node) {
@@ -58,6 +58,11 @@ class Search
             }
             void removeFirst() {
                 nodes.erase(nodes.begin());
+            }
+            void print() {
+                for (Node* n : nodes)
+                    std::cout << "(" << n->i << ";" << n->j << ") ";
+                std::cout << "\n";
             }
         } OPEN;
         std::set<std::pair<int, int>>   CLOSED;

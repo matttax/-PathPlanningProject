@@ -17,12 +17,11 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     auto start_coordinates = map.getStart();
     auto goal_coordinates = map.getGoal();
 
-    OPEN.add(new Node(start_coordinates.first, start_coordinates.second,0,nullptr));
+    OPEN.add(new Node(start_coordinates.first, start_coordinates.second,
+                      0, heuristic(start_coordinates, options, map), nullptr));
     while(!OPEN.nodes.empty()) {
         numberofsteps++;
         Node *curr = *OPEN.nodes.begin();
-        OPEN.removeFirst();
-        CLOSED.emplace(curr->i, curr->j);
         if (curr->i == goal_coordinates.first && curr->j == goal_coordinates.second) {
             sresult.pathfound = true;
             sresult.pathlength = curr->g;
@@ -37,12 +36,15 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             if (wanted) {
                 newWeight(curr, wanted, map);
             } else {
-                Node* child = new Node(child_coordinates.first, child_coordinates.second, __INT_MAX__, curr);
+                Node* child = new Node(child_coordinates.first, child_coordinates.second,
+                                       __INT_MAX__, heuristic(child_coordinates, options, map), curr);
                 nodescreated++;
                 OPEN.add(child);
                 newWeight(curr, child, map);
             }
         }
+        CLOSED.emplace(curr->i, curr->j);
+        OPEN.removeFirst();
     }
     auto end_time = std::chrono::steady_clock::now();
     sresult.time = std::chrono::duration<double>(end_time - start_time).count();
@@ -70,6 +72,7 @@ void Search::newWeight(Node* parent, Node* child, const Map &map) {
     }
     if (child->g > parent->g + weight) {
         child->g = parent->g + weight;
+        child->F = child->g + child->h;
         child->parent = parent;
         OPEN.add(child);
     }
@@ -108,24 +111,25 @@ std::vector<std::pair<int, int>> Search::getChildren(Node* curr, const Map &map,
     }
     std::vector<std::pair<int, int>> children;
 
-    for (auto [x_move, y_move] : moves) {
-        int next_cell_i = curr->i + x_move;
-        int next_cell_j = curr->j + y_move;
+    for (auto [i_move, j_move] : moves) {
+        int next_cell_i = curr->i + i_move;
+        int next_cell_j = curr->j + j_move;
         if (!map.isWalkable(next_cell_i, next_cell_j)) {
             continue;
         }
-        if (x_move * y_move != 0) {
-            //TODO
-        }
-        children.emplace_back(next_cell_i, next_cell_j);
+        if (i_move * j_move != 0) {
+            if (!environment.cutcorners) {
+                if (map.isWalkable(curr->i, curr->j + j_move) && map.isWalkable(curr->i + i_move, curr->j))
+                    children.emplace_back(next_cell_i, next_cell_j);
+            } else if (!environment.allowsqueeze) {
+                if (map.isWalkable(curr->i, curr->j + j_move) || map.isWalkable(curr->i + i_move, curr->j))
+                    children.emplace_back(next_cell_i, next_cell_j);
+            } else children.emplace_back(next_cell_i, next_cell_j);
+        } else children.emplace_back(next_cell_i, next_cell_j);
     }
-    std::cout << curr->g << "\t" << curr->i << ";" << curr->j << " ";
-    for (auto v : children)
-        std::cout << "(" << v.first << ";" << v.second << ")";
-    std::cout << "\n";
     return children;
 }
 
-double Search::heuristic(int current_i, int current_j, const EnvironmentOptions &options, const Map &map) {
+double Search::heuristic(std::pair<int, int> coordinates, const EnvironmentOptions &options, const Map &map) {
     return 0;
 }
