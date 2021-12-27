@@ -1,15 +1,11 @@
 #include "search.h"
 
-Search::Search()
-{
-//set defaults here
-}
+Search::Search() {}
 
 Search::~Search() {}
 
 
-SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
-{
+SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options) {
     int nodescreated = 1;
     int numberofsteps = 0;
     auto start_time = std::chrono::steady_clock::now();
@@ -23,24 +19,22 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
         numberofsteps++;
         Node *curr = *OPEN.nodes.begin();
         if (curr->i == goal_coordinates.first && curr->j == goal_coordinates.second) {
-            sresult.pathfound = true;
-            sresult.pathlength = curr->g;
             break;
         }
         std::vector<std::pair<int, int>> children = getChildren(curr, map, options);
         for (auto& child_coordinates : children) {
-            Node* wanted = OPEN.find(child_coordinates);
             if (CLOSED.count(child_coordinates)) {
                 continue;
             }
+            Node* wanted = OPEN.find(child_coordinates);
             if (wanted) {
-                newWeight(curr, wanted, map);
+                setNewWeight(curr, wanted);
             } else {
                 Node* child = new Node(child_coordinates.first, child_coordinates.second,
                                        __INT_MAX__, heuristic(child_coordinates, options, map), curr);
-                nodescreated++;
                 OPEN.add(child);
-                newWeight(curr, child, map);
+                nodescreated++;
+                setNewWeight(curr, child);
             }
         }
         CLOSED.emplace(curr->i, curr->j);
@@ -48,7 +42,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     }
     auto end_time = std::chrono::steady_clock::now();
     sresult.time = std::chrono::duration<double>(end_time - start_time).count();
-    sresult.pathlength = (*OPEN.nodes.begin())->g;
+    sresult.pathlength = (*OPEN.nodes.begin())->F;
     sresult.numberofsteps = numberofsteps;
     sresult.nodescreated = nodescreated;
     if (!OPEN.nodes.empty()) {
@@ -63,15 +57,15 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     return sresult;
 }
 
-void Search::newWeight(Node* parent, Node* child, const Map &map) {
-    double weight = 1;
+void Search::setNewWeight(Node* parent, Node* child) {
+    double len = 1;
     int dx = abs(parent->i - child->i);
     int dy = abs(parent->j - child->j);
     if (dx + dy == 2) {
-        weight *= CN_SQRT_TWO;
+        len *= CN_SQRT_TWO;
     }
-    if (child->g > parent->g + weight) {
-        child->g = parent->g + weight;
+    if (child->g > parent->g + len) {
+        child->g = parent->g + len;
         child->F = child->g + child->h;
         child->parent = parent;
         OPEN.add(child);
@@ -131,5 +125,15 @@ std::vector<std::pair<int, int>> Search::getChildren(Node* curr, const Map &map,
 }
 
 double Search::heuristic(std::pair<int, int> coordinates, const EnvironmentOptions &options, const Map &map) {
+    if (options.metrictype == 1)
+        return 0;
+    int dx = std::abs(map.getGoal().first - coordinates.first);
+    int dy = std::abs(map.getGoal().second - coordinates.second);
+    switch (options.metrictype) {
+        case 0: return (std::abs(dx - dy) + CN_SQRT_TWO * std::min(dx, dy)) * options.hweight;
+        case 1: return (dx + dy) * options.hweight;
+        case 2: return std::sqrt(dx * dx + dy * dy) * options.hweight;
+        case 3: return std::max(dx, dy) * options.hweight;
+    }
     return 0;
 }
