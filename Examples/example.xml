@@ -37,8 +37,8 @@
         </grid>
     </map>
     <algorithm>
-        <searchtype>dijkstra</searchtype>
-        <metrictype>diagonal</metrictype>
+        <searchtype>astar</searchtype>
+        <metrictype>chebyshev</metrictype>
         <breakingties>g-max</breakingties>
         <hweight>1</hweight>
         <allowdiagonal>true</allowdiagonal>

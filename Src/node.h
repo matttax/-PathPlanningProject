@@ -24,9 +24,9 @@ struct Node
 };
 
 struct NodeComparator {
-    inline bool operator()(const Node* n1, const Node* n2) {
+    bool operator()(const Node* n1, const Node* n2) {
         return std::tie(n1->F, n1->i, n1->j) < std::tie(n2->F, n2->i, n2->j);
-    };
+    }
 };
 
 #endif

@@ -18,8 +18,14 @@ struct OpenCollection {
     std::map<std::pair<int, int>, Node*> coordinates;
     std::set<Node*, NodeComparator> nodes;
     void add(Node* node) {
-        nodes.insert(node);
-        coordinates.emplace(std::make_pair(node->i, node->j), node);
+        Node* opened_node = find({node->i, node->j});
+        if (opened_node) {
+            opened_node = node;
+            coordinates[{node->i, node->j}] = node;
+        } else {
+            nodes.insert(node);
+            coordinates.emplace(std::make_pair(node->i, node->j), node);
+        }
     }
     Node* find(std::pair<int, int> node_coordinates) {
         if (coordinates.count(node_coordinates))
@@ -48,8 +54,9 @@ class Search
         void makePrimaryPath(Node* firstNode);
         void makeSecondaryPath();
 
-        std::vector<std::pair<int, int>>  getChildren(Node* parent, const Map &map, const EnvironmentOptions& environment);
-        void setNewWeight(Node *parent, Node *child);
+        std::set<std::pair<int, int>>  getChildren(Node* parent, const Map &map, const EnvironmentOptions& environment);
+        void resetNewWeight(Node *parent, Node *child);
+        void setNewWeight(Node* parent, std::pair<int, int> child_coordinates, const Map &map, const EnvironmentOptions &options);
 };
 
 #endif
